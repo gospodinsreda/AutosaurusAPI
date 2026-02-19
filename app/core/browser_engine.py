@@ -1,7 +1,7 @@
 """Обертка для Botasaurus Driver"""
 import logging
 from typing import Optional, Dict, Any, List
-from botasaurus.browser import Driver, BrowserConfig
+from botasaurus.browser import Driver
 from botasaurus_driver import Wait
 
 logger = logging.getLogger(__name__)
