@@ -79,7 +79,7 @@ async def get_models_list(request: AIModelsRequest):
     try:
         client = LLMClient(
             endpoint=request.endpoint,
-            model="",
+            model="unused-for-listing",
             api_key=request.api_key
         )
         models = client.get_models_list()
