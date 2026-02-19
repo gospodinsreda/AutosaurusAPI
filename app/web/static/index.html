@@ -807,17 +807,20 @@
             // Collect parameters from visible inputs
             const fields = ['url','selector','text','value','attribute','script','save_as',
                             'cookies','cookies_text','tab_index','seconds','min_seconds','max_seconds','params'];
+            let parseError = false;
             fields.forEach(f => {
+                if (parseError) return;
                 const el = document.getElementById('param-' + f);
                 if (!el) return;
                 let v = el.value.trim();
                 if (!v) return;
                 if (['cookies','params'].includes(f)) {
-                    try { v = JSON.parse(v); } catch { showNotification('Ошибка парсинга JSON: ' + f, 'error'); return; }
+                    try { v = JSON.parse(v); } catch { showNotification('Ошибка парсинга JSON: ' + f, 'error'); parseError = true; return; }
                 }
                 if (['tab_index','seconds','min_seconds','max_seconds'].includes(f)) v = parseFloat(v);
                 payload[f] = v;
             });
+            if (parseError) return;
 
             try {
                 const r = await fetch(`${API}/actions/${sessionId}`, {
