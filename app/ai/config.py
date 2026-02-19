@@ -91,12 +91,15 @@ def load_ai_config() -> Optional[AIConfig]:
     return None
 
 
-def save_ai_config(config: AIConfig):
+def save_ai_config(endpoint: str, model: str, api_key: Optional[str] = None, enabled: bool = True):
     """
     Сохранить конфигурацию AI в базу данных
     
     Args:
-        config: Конфигурация для сохранения
+        endpoint: API endpoint URL
+        model: Название модели
+        api_key: API ключ (опционально)
+        enabled: Включен ли AI
     """
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
@@ -105,7 +108,7 @@ def save_ai_config(config: AIConfig):
     cursor.execute("""
         REPLACE INTO ai_config (id, endpoint, model, api_key, enabled, updated_at)
         VALUES (1, ?, ?, ?, ?, ?)
-    """, (config.endpoint, config.model, config.api_key, int(config.enabled), datetime.now()))
+    """, (endpoint, model, api_key, int(enabled), datetime.now()))
     
     conn.commit()
     conn.close()

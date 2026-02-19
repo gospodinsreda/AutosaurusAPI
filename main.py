@@ -1,5 +1,6 @@
 """Главный файл FastAPI приложения BotasaurusAPI"""
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -17,10 +18,29 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle manager для приложения"""
+    # Startup
+    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
+    logger.info(f"API доступен на: {settings.api_prefix}")
+    logger.info(f"Документация: /docs")
+    
+    yield
+    
+    # Shutdown
+    from app.core.session_manager import session_manager
+    logger.info("Closing all browser sessions...")
+    session_manager.close_all_sessions()
+    logger.info("Shutdown complete")
+
+
 # Создание приложения FastAPI
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
+    lifespan=lifespan,
     description="""
     **Мощный API для автоматизации браузера на основе Botasaurus + FastAPI.**
     
@@ -78,23 +98,6 @@ async def health_check():
         "app": settings.app_name,
         "version": settings.app_version
     }
-
-
-@app.on_event("startup")
-async def startup_event():
-    """События при запуске приложения"""
-    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-    logger.info(f"API доступен на: {settings.api_prefix}")
-    logger.info(f"Документация: /docs")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """События при остановке приложения"""
-    from app.core.session_manager import session_manager
-    logger.info("Closing all browser sessions...")
-    session_manager.close_all_sessions()
-    logger.info("Shutdown complete")
 
 
 if __name__ == "__main__":

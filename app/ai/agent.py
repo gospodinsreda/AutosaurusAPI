@@ -68,7 +68,7 @@ class BrowserAgent:
             title = self.executor.driver.title
             
             # Получаем HTML
-            html = self.executor.driver.page_html
+            html = self.executor.driver.page_source
             
             # Извлекаем видимый текст с помощью BeautifulSoup
             soup = BeautifulSoup(html, 'html.parser')
@@ -199,15 +199,34 @@ class BrowserAgent:
             value = action_data.get('value')
             params = action_data.get('params', {})
             
+            # Маппинг значений для разных типов действий
+            value_mapping = {
+                'navigate': 'url',
+                'type': 'text',
+                'select_option': 'text',
+                'scroll': 'value',
+                'sleep': 'seconds',
+                'screenshot': None,
+            }
+            
             # Создаем запрос действия
-            action_request = ActionRequest(
-                action=ActionType(action_type),
-                selector=selector,
-                url=value if action_type == 'navigate' else None,
-                text=value if action_type in ['type', 'select'] else None,
-                value=value if action_type not in ['navigate', 'type', 'select'] else None,
-                params=params
-            )
+            action_kwargs = {
+                'action': ActionType(action_type),
+                'selector': selector,
+                'params': params
+            }
+            
+            # Добавляем значение в правильное поле
+            if action_type in value_mapping:
+                field_name = value_mapping[action_type]
+                if field_name and value:
+                    action_kwargs[field_name] = value
+            else:
+                # Для неизвестных действий используем value
+                if value:
+                    action_kwargs['value'] = value
+            
+            action_request = ActionRequest(**action_kwargs)
             
             # Выполняем действие
             result = self.executor.execute(action_request)

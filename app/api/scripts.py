@@ -260,7 +260,9 @@ async def run_script(request: ScriptRunRequest):
         
         if not session_id:
             # Создаем новую сессию
-            session_config = script.session_config or {}
+            from app.models.session import SessionConfig
+            session_config_dict = script.session_config or {}
+            session_config = SessionConfig(**session_config_dict)
             session_info = session_manager.create_session(
                 config=session_config,
                 name=f"Script: {script.name}"
