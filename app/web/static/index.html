@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotasaurusAPI - Управление</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { background-color: #3b82f6; color: white; }
+        .action-form { display: none; }
+        .action-form.active { display: block; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="bg-white shadow-lg rounded-lg p-6 mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">🦕 Autosaurus API</h1>
+            <p class="text-gray-600 mt-2">Система управления браузерной автоматизацией</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white shadow-lg rounded-lg mb-8">
+            <div class="flex flex-wrap border-b">
+                <button class="tab-button active px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100 transition" data-tab="sessions">
+                    📋 Сессии
+                </button>
+                <button class="tab-button px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100 transition" data-tab="actions">
+                    ⚡ Действия
+                </button>
+                <button class="tab-button px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100 transition" data-tab="scripts">
+                    📝 Скрипты
+                </button>
+                <button class="tab-button px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100 transition" data-tab="ai-agent">
+                    🤖 AI Агент
+                </button>
+                <button class="tab-button px-6 py-4 font-semibold text-gray-700 hover:bg-gray-100 transition" data-tab="settings">
+                    ⚙️ Настройки
+                </button>
+            </div>
+
+            <!-- Sessions Tab -->
+            <div id="sessions" class="tab-content active p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Управление сессиями</h2>
+                    <button onclick="showCreateSessionForm()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition">
+                        ➕ Создать сессию
+                    </button>
+                </div>
+
+                <!-- Create Session Form (Hidden by default) -->
+                <div id="create-session-form" class="bg-gray-50 p-6 rounded-lg mb-6 hidden">
+                    <h3 class="text-xl font-bold mb-4">Новая сессия</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">URL:</label>
+                            <input type="text" id="session-url" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Ширина:</label>
+                            <input type="number" id="session-width" value="1920" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Высота:</label>
+                            <input type="number" id="session-height" value="1080" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Браузер:</label>
+                            <select id="session-browser" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="chromium">Chromium</option>
+                                <option value="firefox">Firefox</option>
+                                <option value="webkit">WebKit</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="session-headless" class="mr-2">
+                            <label class="text-sm font-semibold">Headless режим</label>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button onclick="createSession()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                            Создать
+                        </button>
+                        <button onclick="hideCreateSessionForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sessions List -->
+                <div id="sessions-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Actions Tab -->
+            <div id="actions" class="tab-content p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Выполнение действий</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Сессия:</label>
+                        <select id="action-session" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Выберите сессию...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Действие:</label>
+                        <select id="action-type" onchange="showActionForm()" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Выберите действие...</option>
+                            <option value="navigate">Перейти по URL</option>
+                            <option value="click">Клик по элементу</option>
+                            <option value="type">Ввести текст</option>
+                            <option value="scroll">Прокрутить страницу</option>
+                            <option value="wait">Подождать</option>
+                            <option value="screenshot">Сделать скриншот</option>
+                            <option value="get_text">Получить текст элемента</option>
+                            <option value="get_attribute">Получить атрибут</option>
+                            <option value="select_option">Выбрать опцию</option>
+                            <option value="hover">Навести курсор</option>
+                            <option value="press_key">Нажать клавишу</option>
+                            <option value="fill_form">Заполнить форму</option>
+                            <option value="execute_js">Выполнить JavaScript</option>
+                            <option value="get_cookies">Получить cookies</option>
+                            <option value="set_cookies">Установить cookies</option>
+                            <option value="clear_cookies">Очистить cookies</option>
+                            <option value="go_back">Назад</option>
+                            <option value="go_forward">Вперед</option>
+                            <option value="refresh">Обновить страницу</option>
+                            <option value="get_title">Получить заголовок</option>
+                            <option value="get_url">Получить URL</option>
+                            <option value="wait_for_element">Ждать элемент</option>
+                            <option value="wait_for_selector">Ждать селектор</option>
+                            <option value="is_visible">Виден ли элемент</option>
+                            <option value="is_enabled">Активен ли элемент</option>
+                            <option value="get_elements">Получить элементы</option>
+                            <option value="count_elements">Подсчитать элементы</option>
+                            <option value="drag_and_drop">Drag & Drop</option>
+                            <option value="upload_file">Загрузить файл</option>
+                            <option value="download_file">Скачать файл</option>
+                            <option value="switch_frame">Переключить фрейм</option>
+                            <option value="switch_to_default">В основной контент</option>
+                            <option value="open_new_tab">Открыть новую вкладку</option>
+                            <option value="close_tab">Закрыть вкладку</option>
+                            <option value="switch_tab">Переключить вкладку</option>
+                            <option value="get_page_source">Получить HTML</option>
+                            <option value="set_viewport">Установить viewport</option>
+                            <option value="emulate_device">Эмулировать устройство</option>
+                            <option value="set_geolocation">Установить геолокацию</option>
+                            <option value="block_urls">Блокировать URL</option>
+                            <option value="set_user_agent">Установить User-Agent</option>
+                            <option value="clear_input">Очистить поле ввода</option>
+                            <option value="check_checkbox">Установить чекбокс</option>
+                            <option value="uncheck_checkbox">Снять чекбокс</option>
+                            <option value="get_element_count">Количество элементов</option>
+                            <option value="wait_for_navigation">Ждать навигацию</option>
+                            <option value="wait_for_load">Ждать загрузку</option>
+                            <option value="get_local_storage">Получить localStorage</option>
+                            <option value="set_local_storage">Установить localStorage</option>
+                            <option value="clear_local_storage">Очистить localStorage</option>
+                            <option value="get_session_storage">Получить sessionStorage</option>
+                            <option value="set_session_storage">Установить sessionStorage</option>
+                            <option value="clear_session_storage">Очистить sessionStorage</option>
+                            <option value="accept_alert">Принять alert</option>
+                            <option value="dismiss_alert">Отклонить alert</option>
+                            <option value="get_alert_text">Текст alert</option>
+                            <option value="send_keys_to_alert">Ввести в alert</option>
+                            <option value="double_click">Двойной клик</option>
+                            <option value="right_click">Правый клик</option>
+                            <option value="focus">Фокус на элемент</option>
+                            <option value="blur">Убрать фокус</option>
+                            <option value="get_computed_style">Получить стили</option>
+                            <option value="is_checked">Отмечен ли</option>
+                            <option value="is_selected">Выбран ли</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dynamic Action Forms -->
+                <div id="action-forms" class="bg-gray-50 p-6 rounded-lg mb-6">
+                    <p class="text-gray-500 text-center">Выберите действие для отображения формы</p>
+                </div>
+
+                <button onclick="executeAction()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition w-full md:w-auto">
+                    ▶️ Выполнить
+                </button>
+
+                <!-- Action Result -->
+                <div id="action-result" class="mt-6 bg-white p-6 rounded-lg shadow hidden">
+                    <h3 class="text-xl font-bold mb-4">Результат:</h3>
+                    <pre id="action-result-content" class="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96"></pre>
+                </div>
+            </div>
+
+            <!-- Scripts Tab -->
+            <div id="scripts" class="tab-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Управление скриптами</h2>
+                    <button onclick="showNewScriptForm()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition">
+                        ➕ Новый скрипт
+                    </button>
+                </div>
+
+                <!-- Script Editor -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold">Редактор скрипта</h3>
+                            <select id="script-session" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">Выберите сессию...</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold mb-2">Название скрипта:</label>
+                            <input type="text" id="script-name" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Мой скрипт">
+                        </div>
+                        <label class="block text-sm font-semibold mb-2">JSON скрипт:</label>
+                        <textarea id="script-editor" class="w-full h-96 px-4 py-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500" placeholder='[
+  {
+    "action": "navigate",
+    "url": "https://example.com"
+  },
+  {
+    "action": "click",
+    "selector": "#button"
+  }
+]'></textarea>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="runScript()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                                ▶️ Запустить
+                            </button>
+                            <button onclick="saveScript()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                                💾 Сохранить
+                            </button>
+                            <button onclick="clearScriptEditor()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                                🗑️ Очистить
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-bold mb-4">Сохранённые скрипты</h3>
+                        <div id="saved-scripts" class="space-y-2 max-h-96 overflow-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Script Result -->
+                <div id="script-result" class="bg-white p-6 rounded-lg shadow hidden">
+                    <h3 class="text-xl font-bold mb-4">Результат выполнения:</h3>
+                    <pre id="script-result-content" class="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96"></pre>
+                </div>
+            </div>
+
+            <!-- AI Agent Tab -->
+            <div id="ai-agent" class="tab-content p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">🤖 AI Агент</h2>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Внимание:</strong> Убедитесь, что настроили AI модель в разделе "Настройки" перед использованием.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Сессия:</label>
+                        <select id="ai-session" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Выберите сессию...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Максимум шагов:</label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="ai-max-steps" min="1" max="50" value="10" class="flex-1">
+                            <span id="ai-max-steps-value" class="font-bold text-lg">10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold mb-2">Цель (что должен сделать агент):</label>
+                    <textarea id="ai-goal" rows="4" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Например: Найти информацию о Python на Wikipedia и сделать скриншот"></textarea>
+                </div>
+
+                <button onclick="runAIAgent()" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold transition w-full md:w-auto">
+                    🚀 Запустить AI Агента
+                </button>
+
+                <!-- AI Agent Output -->
+                <div id="ai-output" class="mt-6 space-y-4">
+                    <!-- Conversation History -->
+                    <div id="ai-conversation" class="bg-white p-6 rounded-lg shadow hidden">
+                        <h3 class="text-xl font-bold mb-4">💬 История диалога:</h3>
+                        <div id="ai-conversation-content" class="space-y-4 max-h-96 overflow-auto"></div>
+                    </div>
+
+                    <!-- Action Transcript -->
+                    <div id="ai-transcript" class="bg-white p-6 rounded-lg shadow hidden">
+                        <h3 class="text-xl font-bold mb-4">📋 Выполненные действия:</h3>
+                        <div id="ai-transcript-content" class="space-y-2 max-h-96 overflow-auto"></div>
+                    </div>
+
+                    <!-- Final Result -->
+                    <div id="ai-final-result" class="bg-white p-6 rounded-lg shadow hidden">
+                        <h3 class="text-xl font-bold mb-4">✅ Итоговый результат:</h3>
+                        <pre id="ai-final-result-content" class="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">⚙️ Настройки AI</h2>
+
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                    <p class="text-sm text-blue-800">
+                        <strong>Подсказка:</strong> Используйте LM Studio для локального запуска моделей. Запустите сервер в LM Studio и укажите endpoint (обычно http://localhost:1234/v1).
+                    </p>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">AI Endpoint:</label>
+                        <input type="text" id="ai-endpoint" value="http://localhost:1234/v1" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="http://localhost:1234/v1">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">API Key (опционально):</label>
+                        <input type="password" id="ai-api-key" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Оставьте пустым для локальных моделей">
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button onclick="fetchModelsFromLMStudio()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                            🔄 Получить модели из LM Studio
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Выберите модель:</label>
+                        <select id="ai-model" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Сначала загрузите список моделей...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Температура:</label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" id="ai-temperature" min="0" max="2" step="0.1" value="0.7" class="flex-1">
+                            <span id="ai-temperature-value" class="font-bold text-lg">0.7</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Max Tokens:</label>
+                        <input type="number" id="ai-max-tokens" value="2000" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="ai-enabled" checked class="mr-2 w-5 h-5">
+                        <label class="text-sm font-semibold">Включить AI агента</label>
+                    </div>
+                </div>
+
+                <button onclick="saveAISettings()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition w-full md:w-auto">
+                    💾 Сохранить настройки
+                </button>
+
+                <div id="settings-status" class="mt-4 p-4 rounded-lg hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = window.location.origin;
+        
+        // State
+        let sessions = [];
+        let savedScripts = JSON.parse(localStorage.getItem('scripts') || '[]');
+        let aiSettings = JSON.parse(localStorage.getItem('aiSettings') || '{"endpoint": "http://localhost:1234/v1", "model": "", "temperature": 0.7, "maxTokens": 2000, "enabled": true, "apiKey": ""}');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupTabs();
+            loadSessions();
+            loadSavedScripts();
+            loadAISettings();
+            setupSliders();
+        });
+
+        // Tab Management
+        function setupTabs() {
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.dataset.tab;
+                    
+                    // Update buttons
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Update content
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(tabName).classList.add('active');
+                });
+            });
+        }
+
+        // Sliders
+        function setupSliders() {
+            const maxStepsSlider = document.getElementById('ai-max-steps');
+            const maxStepsValue = document.getElementById('ai-max-steps-value');
+            maxStepsSlider.addEventListener('input', (e) => {
+                maxStepsValue.textContent = e.target.value;
+            });
+
+            const tempSlider = document.getElementById('ai-temperature');
+            const tempValue = document.getElementById('ai-temperature-value');
+            tempSlider.addEventListener('input', (e) => {
+                tempValue.textContent = parseFloat(e.target.value).toFixed(1);
+            });
+        }
+
+        // Sessions Management
+        async function loadSessions() {
+            try {
+                const response = await fetch(`${API_BASE}/sessions`);
+                sessions = await response.json();
+                renderSessions();
+                updateSessionDropdowns();
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showNotification('Ошибка загрузки сессий', 'error');
+            }
+        }
+
+        function renderSessions() {
+            const container = document.getElementById('sessions-list');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center">Нет активных сессий. Создайте новую сессию для начала работы.</p>';
+                return;
+            }
+
+            container.innerHTML = sessions.map(session => `
+                <div class="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-lg">${session.session_id}</h3>
+                        <p class="text-sm text-gray-600">Браузер: ${session.browser_type || 'chromium'} | URL: ${session.current_url || 'N/A'}</p>
+                        <p class="text-xs text-gray-500">Создана: ${new Date(session.created_at).toLocaleString('ru-RU')}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="viewSession('${session.session_id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold transition">
+                            👁️ Просмотр
+                        </button>
+                        <button onclick="closeSession('${session.session_id}')" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded font-semibold transition">
+                            ⏸️ Закрыть
+                        </button>
+                        <button onclick="removeSession('${session.session_id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold transition">
+                            🗑️ Удалить
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSessionDropdowns() {
+            const dropdowns = ['action-session', 'script-session', 'ai-session'];
+            dropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Выберите сессию...</option>' + 
+                    sessions.map(s => `<option value="${s.session_id}">${s.session_id}</option>`).join('');
+            });
+        }
+
+        function showCreateSessionForm() {
+            document.getElementById('create-session-form').classList.remove('hidden');
+        }
+
+        function hideCreateSessionForm() {
+            document.getElementById('create-session-form').classList.add('hidden');
+        }
+
+        async function createSession() {
+            const config = {
+                url: document.getElementById('session-url').value,
+                width: parseInt(document.getElementById('session-width').value),
+                height: parseInt(document.getElementById('session-height').value),
+                browser_type: document.getElementById('session-browser').value,
+                headless: document.getElementById('session-headless').checked
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    showNotification('Сессия успешно создана!', 'success');
+                    hideCreateSessionForm();
+                    await loadSessions();
+                } else {
+                    const error = await response.json();
+                    showNotification(`Ошибка: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating session:', error);
+                showNotification('Ошибка создания сессии', 'error');
+            }
+        }
+
+        async function viewSession(sessionId) {
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}`);
+                const data = await response.json();
+                alert(`Информация о сессии:\n\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Error viewing session:', error);
+                showNotification('Ошибка просмотра сессии', 'error');
+            }
+        }
+
+        async function closeSession(sessionId) {
+            if (!confirm('Вы уверены, что хотите закрыть эту сессию?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}/close`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showNotification('Сессия закрыта', 'success');
+                    await loadSessions();
+                } else {
+                    showNotification('Ошибка закрытия сессии', 'error');
+                }
+            } catch (error) {
+                console.error('Error closing session:', error);
+                showNotification('Ошибка закрытия сессии', 'error');
+            }
+        }
+
+        async function removeSession(sessionId) {
+            if (!confirm('Вы уверены, что хотите удалить эту сессию?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showNotification('Сессия удалена', 'success');
+                    await loadSessions();
+                } else {
+                    showNotification('Ошибка удаления сессии', 'error');
+                }
+            } catch (error) {
+                console.error('Error removing session:', error);
+                showNotification('Ошибка удаления сессии', 'error');
+            }
+        }
+
+        // Actions Management
+        function showActionForm() {
+            const actionType = document.getElementById('action-type').value;
+            const container = document.getElementById('action-forms');
+            
+            if (!actionType) {
+                container.innerHTML = '<p class="text-gray-500 text-center">Выберите действие для отображения формы</p>';
+                return;
+            }
+
+            const forms = {
+                navigate: '<label class="block text-sm font-semibold mb-2">URL:</label><input type="text" id="param-url" class="w-full px-4 py-2 border rounded-lg" placeholder="https://example.com">',
+                
+                click: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg" placeholder="#button, .class, xpath=//button">',
+                
+                type: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Текст:</label><input type="text" id="param-text" class="w-full px-4 py-2 border rounded-lg">',
+                
+                scroll: '<label class="block text-sm font-semibold mb-2">X:</label><input type="number" id="param-x" value="0" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Y:</label><input type="number" id="param-y" value="500" class="w-full px-4 py-2 border rounded-lg">',
+                
+                wait: '<label class="block text-sm font-semibold mb-2">Время (мс):</label><input type="number" id="param-time" value="1000" class="w-full px-4 py-2 border rounded-lg">',
+                
+                screenshot: '<label class="block text-sm font-semibold mb-2">Путь для сохранения (опционально):</label><input type="text" id="param-path" class="w-full px-4 py-2 border rounded-lg" placeholder="screenshot.png">',
+                
+                get_text: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg">',
+                
+                get_attribute: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Атрибут:</label><input type="text" id="param-attribute" class="w-full px-4 py-2 border rounded-lg" placeholder="href, class, id">',
+                
+                select_option: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Значение:</label><input type="text" id="param-value" class="w-full px-4 py-2 border rounded-lg">',
+                
+                hover: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg">',
+                
+                press_key: '<label class="block text-sm font-semibold mb-2">Клавиша:</label><input type="text" id="param-key" class="w-full px-4 py-2 border rounded-lg" placeholder="Enter, Escape, Tab, Space">',
+                
+                execute_js: '<label class="block text-sm font-semibold mb-2">JavaScript код:</label><textarea id="param-code" rows="4" class="w-full px-4 py-2 border rounded-lg font-mono" placeholder="return document.title;"></textarea>',
+                
+                set_cookies: '<label class="block text-sm font-semibold mb-2">Cookies (JSON):</label><textarea id="param-cookies" rows="4" class="w-full px-4 py-2 border rounded-lg font-mono" placeholder=\'[{"name": "test", "value": "123"}]\'></textarea>',
+                
+                wait_for_element: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Timeout (мс):</label><input type="number" id="param-timeout" value="30000" class="w-full px-4 py-2 border rounded-lg">',
+                
+                upload_file: '<label class="block text-sm font-semibold mb-2">Селектор:</label><input type="text" id="param-selector" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Путь к файлу:</label><input type="text" id="param-path" class="w-full px-4 py-2 border rounded-lg">',
+                
+                set_viewport: '<label class="block text-sm font-semibold mb-2">Ширина:</label><input type="number" id="param-width" value="1920" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Высота:</label><input type="number" id="param-height" value="1080" class="w-full px-4 py-2 border rounded-lg">',
+                
+                set_geolocation: '<label class="block text-sm font-semibold mb-2">Широта:</label><input type="number" id="param-latitude" step="0.0001" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Долгота:</label><input type="number" id="param-longitude" step="0.0001" class="w-full px-4 py-2 border rounded-lg">',
+                
+                set_user_agent: '<label class="block text-sm font-semibold mb-2">User-Agent:</label><input type="text" id="param-user-agent" class="w-full px-4 py-2 border rounded-lg">',
+                
+                drag_and_drop: '<label class="block text-sm font-semibold mb-2">Селектор источника:</label><input type="text" id="param-source" class="w-full px-4 py-2 border rounded-lg mb-4"><label class="block text-sm font-semibold mb-2">Селектор цели:</label><input type="text" id="param-target" class="w-full px-4 py-2 border rounded-lg">',
+            };
+
+            container.innerHTML = forms[actionType] || '<p class="text-gray-500 text-center">Форма для этого действия в разработке</p>';
+        }
+
+        async function executeAction() {
+            const sessionId = document.getElementById('action-session').value;
+            const actionType = document.getElementById('action-type').value;
+
+            if (!sessionId || !actionType) {
+                showNotification('Выберите сессию и действие', 'error');
+                return;
+            }
+
+            // Build action payload based on type
+            const action = { action: actionType };
+            
+            // Add parameters based on action type
+            const paramMap = {
+                navigate: ['url'],
+                click: ['selector'],
+                type: ['selector', 'text'],
+                scroll: ['x', 'y'],
+                wait: ['time'],
+                screenshot: ['path'],
+                get_text: ['selector'],
+                get_attribute: ['selector', 'attribute'],
+                select_option: ['selector', 'value'],
+                hover: ['selector'],
+                press_key: ['key'],
+                execute_js: ['code'],
+                set_cookies: ['cookies'],
+                wait_for_element: ['selector', 'timeout'],
+                upload_file: ['selector', 'path'],
+                set_viewport: ['width', 'height'],
+                set_geolocation: ['latitude', 'longitude'],
+                set_user_agent: ['user-agent'],
+                drag_and_drop: ['source', 'target']
+            };
+
+            if (paramMap[actionType]) {
+                paramMap[actionType].forEach(param => {
+                    const element = document.getElementById(`param-${param}`);
+                    if (element) {
+                        let value = element.value;
+                        // Try to parse JSON for specific fields
+                        if (param === 'cookies' && value) {
+                            try {
+                                value = JSON.parse(value);
+                            } catch (e) {
+                                showNotification('Ошибка парсинга JSON для cookies', 'error');
+                                return;
+                            }
+                        }
+                        // Convert numbers
+                        if (['x', 'y', 'time', 'timeout', 'width', 'height', 'latitude', 'longitude'].includes(param)) {
+                            value = parseFloat(value);
+                        }
+                        action[param.replace('-', '_')] = value;
+                    }
+                });
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(action)
+                });
+
+                const result = await response.json();
+                
+                // Show result
+                document.getElementById('action-result').classList.remove('hidden');
+                document.getElementById('action-result-content').textContent = JSON.stringify(result, null, 2);
+                
+                if (response.ok) {
+                    showNotification('Действие выполнено успешно', 'success');
+                } else {
+                    showNotification(`Ошибка: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error executing action:', error);
+                showNotification('Ошибка выполнения действия', 'error');
+            }
+        }
+
+        // Scripts Management
+        function loadSavedScripts() {
+            const container = document.getElementById('saved-scripts');
+            
+            if (savedScripts.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center">Нет сохранённых скриптов</p>';
+                return;
+            }
+
+            container.innerHTML = savedScripts.map((script, index) => `
+                <div class="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold">${script.name}</h4>
+                        <p class="text-xs text-gray-600">${script.actions.length} действий</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loadScript(${index})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                            📂 Загрузить
+                        </button>
+                        <button onclick="deleteScript(${index})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showNewScriptForm() {
+            document.getElementById('script-name').value = '';
+            document.getElementById('script-editor').value = '';
+        }
+
+        function saveScript() {
+            const name = document.getElementById('script-name').value.trim();
+            const editorContent = document.getElementById('script-editor').value.trim();
+
+            if (!name || !editorContent) {
+                showNotification('Введите название и содержимое скрипта', 'error');
+                return;
+            }
+
+            try {
+                const actions = JSON.parse(editorContent);
+                savedScripts.push({ name, actions });
+                localStorage.setItem('scripts', JSON.stringify(savedScripts));
+                loadSavedScripts();
+                showNotification('Скрипт сохранён', 'success');
+            } catch (error) {
+                showNotification('Ошибка парсинга JSON', 'error');
+            }
+        }
+
+        function loadScript(index) {
+            const script = savedScripts[index];
+            document.getElementById('script-name').value = script.name;
+            document.getElementById('script-editor').value = JSON.stringify(script.actions, null, 2);
+            showNotification('Скрипт загружен в редактор', 'success');
+        }
+
+        function deleteScript(index) {
+            if (!confirm('Удалить этот скрипт?')) return;
+            savedScripts.splice(index, 1);
+            localStorage.setItem('scripts', JSON.stringify(savedScripts));
+            loadSavedScripts();
+            showNotification('Скрипт удалён', 'success');
+        }
+
+        function clearScriptEditor() {
+            document.getElementById('script-name').value = '';
+            document.getElementById('script-editor').value = '';
+        }
+
+        async function runScript() {
+            const sessionId = document.getElementById('script-session').value;
+            const editorContent = document.getElementById('script-editor').value.trim();
+
+            if (!sessionId || !editorContent) {
+                showNotification('Выберите сессию и введите скрипт', 'error');
+                return;
+            }
+
+            try {
+                const actions = JSON.parse(editorContent);
+                
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}/script`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actions })
+                });
+
+                const result = await response.json();
+                
+                document.getElementById('script-result').classList.remove('hidden');
+                document.getElementById('script-result-content').textContent = JSON.stringify(result, null, 2);
+                
+                if (response.ok) {
+                    showNotification('Скрипт выполнен успешно', 'success');
+                } else {
+                    showNotification(`Ошибка: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error running script:', error);
+                showNotification('Ошибка выполнения скрипта', 'error');
+            }
+        }
+
+        // AI Agent
+        async function runAIAgent() {
+            const sessionId = document.getElementById('ai-session').value;
+            const goal = document.getElementById('ai-goal').value.trim();
+            const maxSteps = parseInt(document.getElementById('ai-max-steps').value);
+
+            if (!sessionId || !goal) {
+                showNotification('Выберите сессию и введите цель', 'error');
+                return;
+            }
+
+            if (!aiSettings.enabled) {
+                showNotification('AI агент отключен в настройках', 'error');
+                return;
+            }
+
+            if (!aiSettings.model) {
+                showNotification('Выберите модель в настройках', 'error');
+                return;
+            }
+
+            // Show output sections
+            document.getElementById('ai-conversation').classList.remove('hidden');
+            document.getElementById('ai-transcript').classList.remove('hidden');
+            document.getElementById('ai-final-result').classList.remove('hidden');
+            
+            // Clear previous content
+            document.getElementById('ai-conversation-content').innerHTML = '<p class="text-gray-500">Запуск AI агента...</p>';
+            document.getElementById('ai-transcript-content').innerHTML = '';
+            document.getElementById('ai-final-result-content').textContent = '';
+
+            try {
+                const payload = {
+                    goal,
+                    max_steps: maxSteps,
+                    ai_config: {
+                        endpoint: aiSettings.endpoint,
+                        model: aiSettings.model,
+                        temperature: aiSettings.temperature,
+                        max_tokens: aiSettings.maxTokens,
+                        api_key: aiSettings.apiKey || undefined
+                    }
+                };
+
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}/ai-agent`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                // Display conversation
+                if (result.conversation) {
+                    const conversationHtml = result.conversation.map(msg => `
+                        <div class="border-l-4 ${msg.role === 'user' ? 'border-blue-500 bg-blue-50' : 'border-green-500 bg-green-50'} p-3 rounded">
+                            <div class="font-bold text-sm mb-1">${msg.role === 'user' ? '👤 Пользователь' : '🤖 AI'}</div>
+                            <div class="text-sm">${msg.content}</div>
+                        </div>
+                    `).join('');
+                    document.getElementById('ai-conversation-content').innerHTML = conversationHtml;
+                }
+
+                // Display actions transcript
+                if (result.actions_taken) {
+                    const transcriptHtml = result.actions_taken.map((action, i) => `
+                        <div class="text-sm bg-gray-100 p-2 rounded">
+                            <span class="font-bold">${i + 1}.</span> ${action.action} 
+                            ${action.success ? '✅' : '❌'}
+                        </div>
+                    `).join('');
+                    document.getElementById('ai-transcript-content').innerHTML = transcriptHtml;
+                }
+
+                // Display final result
+                document.getElementById('ai-final-result-content').textContent = JSON.stringify(result, null, 2);
+                
+                if (response.ok && result.success) {
+                    showNotification('AI агент завершил работу успешно', 'success');
+                } else {
+                    showNotification(`AI агент завершился с ошибками`, 'error');
+                }
+            } catch (error) {
+                console.error('Error running AI agent:', error);
+                showNotification('Ошибка запуска AI агента', 'error');
+                document.getElementById('ai-conversation-content').innerHTML = `<p class="text-red-500">Ошибка: ${error.message}</p>`;
+            }
+        }
+
+        // AI Settings
+        function loadAISettings() {
+            document.getElementById('ai-endpoint').value = aiSettings.endpoint;
+            document.getElementById('ai-model').value = aiSettings.model;
+            document.getElementById('ai-temperature').value = aiSettings.temperature;
+            document.getElementById('ai-temperature-value').textContent = aiSettings.temperature.toFixed(1);
+            document.getElementById('ai-max-tokens').value = aiSettings.maxTokens;
+            document.getElementById('ai-enabled').checked = aiSettings.enabled;
+            document.getElementById('ai-api-key').value = aiSettings.apiKey || '';
+        }
+
+        function saveAISettings() {
+            aiSettings = {
+                endpoint: document.getElementById('ai-endpoint').value,
+                model: document.getElementById('ai-model').value,
+                temperature: parseFloat(document.getElementById('ai-temperature').value),
+                maxTokens: parseInt(document.getElementById('ai-max-tokens').value),
+                enabled: document.getElementById('ai-enabled').checked,
+                apiKey: document.getElementById('ai-api-key').value
+            };
+            
+            localStorage.setItem('aiSettings', JSON.stringify(aiSettings));
+            showSettingsStatus('Настройки сохранены', 'success');
+        }
+
+        async function fetchModelsFromLMStudio() {
+            const endpoint = document.getElementById('ai-endpoint').value;
+            
+            if (!endpoint) {
+                showSettingsStatus('Введите AI endpoint', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${endpoint}/models`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                const select = document.getElementById('ai-model');
+                
+                if (data.data && data.data.length > 0) {
+                    select.innerHTML = data.data.map(model => 
+                        `<option value="${model.id}">${model.id}</option>`
+                    ).join('');
+                    showSettingsStatus(`Загружено ${data.data.length} моделей`, 'success');
+                } else {
+                    showSettingsStatus('Модели не найдены', 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching models:', error);
+                showSettingsStatus('Ошибка загрузки моделей. Проверьте endpoint и что LM Studio запущен.', 'error');
+            }
+        }
+
+        function showSettingsStatus(message, type) {
+            const statusDiv = document.getElementById('settings-status');
+            statusDiv.className = `mt-4 p-4 rounded-lg ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Notifications
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-opacity`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

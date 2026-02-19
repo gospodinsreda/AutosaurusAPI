@@ -1,0 +1,43 @@
+{
+  "name": "Пример: Google поиск",
+  "description": "Поиск в Google и извлечение первых 5 результатов",
+  "variables": {
+    "search_query": "web scraping python"
+  },
+  "session_config": {
+    "headless": false,
+    "lang": "ru"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://www.google.com"
+    },
+    {
+      "action": "wait_for_element",
+      "selector": "textarea[name='q']"
+    },
+    {
+      "action": "type",
+      "selector": "textarea[name='q']",
+      "text": "$search_query"
+    },
+    {
+      "action": "click",
+      "selector": "input[name='btnK']"
+    },
+    {
+      "action": "wait_for_element",
+      "selector": "#search"
+    },
+    {
+      "action": "soupify_select_all",
+      "selector": "h3",
+      "save_as": "result_titles"
+    },
+    {
+      "action": "get_url",
+      "save_as": "final_url"
+    }
+  ]
+}
