@@ -28,7 +28,7 @@ async def execute_action(session_id: str, action_request: ActionRequest):
     # Выполнение действия
     start_time = time.time()
     try:
-        result = executor.execute_action(action_request)
+        result = executor.execute(action_request)
         execution_time = time.time() - start_time
         
         # Сохранение переменных обратно в сессию
@@ -73,7 +73,7 @@ async def execute_batch_actions(session_id: str, batch_request: BatchActionReque
     for action_request in batch_request.actions:
         start_time = time.time()
         try:
-            result = executor.execute_action(action_request)
+            result = executor.execute(action_request)
             execution_time = time.time() - start_time
             
             results.append(ActionResponse(

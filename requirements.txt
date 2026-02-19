@@ -4,8 +4,8 @@ uvicorn[standard]~=0.27.0
 python-multipart~=0.0.6
 
 # Botasaurus - Browser Automation
-botasaurus~=4.0.35
-botasaurus-driver~=4.0.35
+botasaurus~=4.0.97
+botasaurus-driver~=4.0.92
 
 # BeautifulSoup for parsing
 beautifulsoup4~=4.12.3
