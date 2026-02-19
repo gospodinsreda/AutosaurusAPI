@@ -6,6 +6,7 @@ from app.ai.config import load_ai_config, save_ai_config, load_conversation_hist
 from app.ai.llm_client import LLMClient
 from app.ai.agent import BrowserAgent
 from app.core.session_manager import session_manager
+from app.core.action_executor import ActionExecutor
 
 router = APIRouter(prefix="/ai", tags=["AI Агент"])
 
@@ -50,7 +51,7 @@ async def get_ai_config():
     
     return {
         "success": True,
-        "config": config
+        "config": config.model_dump()
     }
 
 
@@ -78,6 +79,7 @@ async def get_models_list(request: AIModelsRequest):
     try:
         client = LLMClient(
             endpoint=request.endpoint,
+            model="",
             api_key=request.api_key
         )
         models = client.get_models_list()
@@ -94,7 +96,7 @@ async def run_ai_task(request: AIRunRequest):
     """Запустить AI задачу автоматизации браузера"""
     # Проверка конфигурации AI
     config = load_ai_config()
-    if not config or not config.get("enabled"):
+    if not config or not config.enabled:
         raise HTTPException(status_code=400, detail="AI не настроен или отключен")
     
     # Получение сессии
@@ -103,12 +105,24 @@ async def run_ai_task(request: AIRunRequest):
         raise HTTPException(status_code=404, detail="Сессия не найдена")
     
     try:
+        # Создание LLM клиента
+        llm_client = LLMClient(
+            endpoint=config.endpoint,
+            model=config.model,
+            api_key=config.api_key
+        )
+        
+        # Создание ActionExecutor
+        driver = session["engine"].get_driver()
+        variables = session.get("variables", {})
+        executor = ActionExecutor(driver, variables)
+        
         # Создание AI агента
         agent = BrowserAgent(
-            session=session,
-            endpoint=config["endpoint"],
-            model=config["model"],
-            api_key=config.get("api_key")
+            executor=executor,
+            llm_client=llm_client,
+            goal=request.goal,
+            max_steps=request.max_steps
         )
         
         # Сохранение начального сообщения
@@ -119,16 +133,13 @@ async def run_ai_task(request: AIRunRequest):
         )
         
         # Запуск агента
-        result = agent.run(
-            goal=request.goal,
-            max_steps=request.max_steps
-        )
+        result = agent.run()
         
         # Сохранение результата
         save_conversation_message(
             session_id=request.session_id,
             role="assistant",
-            content=f"Выполнено за {result['steps_completed']} шагов. Цель достигнута: {result['goal_achieved']}"
+            content=f"Выполнено за {result['steps_taken']} шагов. Цель достигнута: {result['success']}"
         )
         
         return {
@@ -147,7 +158,7 @@ async def get_conversation_history(session_id: str):
         history = load_conversation_history(session_id)
         return {
             "success": True,
-            "history": history
+            "history": [msg.model_dump() for msg in history]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
